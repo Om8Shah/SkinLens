@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,22 +14,21 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
-import { getConditions, getSeverityConfig, getAgreementLevel } from '../mock/skinAnalysis';
+import { getConditions, getSeverityConfig } from '../mock/skinAnalysis';
 import { useAuth } from '../context/AuthContext';
 import { saveScan } from '../lib/scansDb';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.78;
 const CONDITIONS = getConditions();
 
-function ConfidenceBar({ confidence, color }) {
+function ConfidenceBar({ confidence, color, delay }) {
   const widthAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(widthAnim, {
       toValue: confidence,
-      duration: 800,
-      delay: 200,
+      duration: 700,
+      delay,
       useNativeDriver: false,
     }).start();
   }, [confidence]);
@@ -42,103 +41,38 @@ function ConfidenceBar({ confidence, color }) {
   return (
     <View style={styles.confidenceContainer}>
       <View style={styles.confidenceBarBg}>
-        <Animated.View
-          style={[styles.confidenceBarFill, { width: barWidth, backgroundColor: color }]}
-        />
+        <Animated.View style={[styles.confidenceBarFill, { width: barWidth, backgroundColor: color }]} />
       </View>
       <Text style={[styles.confidenceText, { color }]}>{confidence}%</Text>
     </View>
   );
 }
 
-function ConditionRow({ condition, result }) {
+function ConditionCard({ condition, result, index }) {
   const severity = getSeverityConfig(result.severity);
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, delay: index * 80, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 400, delay: index * 80, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
   return (
-    <View style={styles.conditionRow}>
+    <Animated.View style={[styles.conditionCard, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
       <View style={styles.conditionLeft}>
         <View style={[styles.severityDot, { backgroundColor: severity.color }]} />
-        <Text style={styles.conditionName} numberOfLines={1}>{condition.label}</Text>
+        <Text style={styles.conditionName}>{condition.label}</Text>
       </View>
       <View style={styles.conditionRight}>
         <View style={[styles.severityBadge, { backgroundColor: severity.bgColor }]}>
           <Text style={[styles.severityLabel, { color: severity.color }]}>{severity.label}</Text>
         </View>
-        <ConfidenceBar confidence={result.confidence} color={severity.color} />
+        <ConfidenceBar confidence={result.confidence} color={severity.color} delay={index * 80 + 200} />
       </View>
-    </View>
-  );
-}
-
-function ApiCard({ apiData }) {
-  return (
-    <View style={styles.apiCard}>
-      <View style={styles.apiCardHeader}>
-        <View style={[styles.apiCardIcon, { backgroundColor: apiData.color + '18' }]}>
-          <Ionicons name={apiData.icon} size={20} color={apiData.color} />
-        </View>
-        <Text style={styles.apiCardName}>{apiData.name}</Text>
-        <View style={[styles.apiCardDot, { backgroundColor: apiData.color }]} />
-      </View>
-      <View style={styles.conditionsContainer}>
-        {CONDITIONS.map((condition) => (
-          <ConditionRow
-            key={condition.key}
-            condition={condition}
-            result={apiData.results[condition.key]}
-          />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function CompareView({ results }) {
-  const apis = Object.values(results);
-  return (
-    <View style={styles.compareContainer}>
-      {CONDITIONS.map((condition) => {
-        const agreement = getAgreementLevel(results, condition.key);
-        return (
-          <View key={condition.key} style={styles.compareRow}>
-            <View style={styles.compareHeader}>
-              <Text style={styles.compareConditionName}>{condition.label}</Text>
-              <View style={[styles.agreementBadge, { backgroundColor: agreement.color + '20' }]}>
-                <Ionicons
-                  name={
-                    agreement.level === 'full'
-                      ? 'checkmark-circle'
-                      : agreement.level === 'partial'
-                      ? 'alert-circle'
-                      : 'close-circle'
-                  }
-                  size={14}
-                  color={agreement.color}
-                />
-                <Text style={[styles.agreementText, { color: agreement.color }]}>
-                  {agreement.label}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.compareApis}>
-              {apis.map((api) => {
-                const severity = getSeverityConfig(api.results[condition.key].severity);
-                return (
-                  <View key={api.name} style={styles.compareApiItem}>
-                    <View style={[styles.compareApiDot, { backgroundColor: api.color }]} />
-                    <Text style={styles.compareApiName} numberOfLines={1}>{api.name}</Text>
-                    <View style={[styles.compareSeverityBadge, { backgroundColor: severity.bgColor }]}>
-                      <Text style={[styles.compareSeverityText, { color: severity.color }]}>
-                        {severity.label}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        );
-      })}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -146,16 +80,16 @@ export default function ResultsScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { photoUri, results } = route.params;
-  const [activeTab, setActiveTab] = useState('results');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const savedRef = useRef(false);
 
+  const claudeResults = results.claude.results;
+  const detected = Object.values(claudeResults).filter((r) => r.severity !== 'not_detected');
+  const detectedCount = detected.length;
+  const severeCount = detected.filter((r) => r.severity === 'moderate_severe').length;
+
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
   }, []);
 
   useEffect(() => {
@@ -165,10 +99,14 @@ export default function ResultsScreen({ navigation, route }) {
     }
   }, [user, results]);
 
-  const detectedCount = Object.values(results).reduce((total, api) => {
-    return total + Object.values(api.results).filter((r) => r.severity !== 'not_detected').length;
-  }, 0);
-  const totalChecks = Object.values(results).length * CONDITIONS.length;
+  const getSummaryConfig = () => {
+    if (detectedCount === 0) return { label: 'Excellent skin health', color: Colors.success, icon: 'checkmark-circle' };
+    if (severeCount > 1) return { label: 'Needs attention', color: Colors.danger, icon: 'alert-circle' };
+    if (detectedCount <= 2) return { label: 'Mild concerns detected', color: Colors.warning, icon: 'alert-circle' };
+    return { label: 'Multiple conditions found', color: Colors.warning, icon: 'information-circle' };
+  };
+
+  const summary = getSummaryConfig();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -176,9 +114,10 @@ export default function ResultsScreen({ navigation, route }) {
 
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Your Results</Text>
-        <Text style={styles.headerSubtitle}>
-          {detectedCount} of {totalChecks} checks flagged across 3 models
-        </Text>
+        <View style={styles.claudeBadge}>
+          <Ionicons name="sparkles" size={13} color="#CC6B2C" />
+          <Text style={styles.claudeBadgeText}>Claude AI</Text>
+        </View>
       </View>
 
       <ScrollView
@@ -196,54 +135,42 @@ export default function ResultsScreen({ navigation, route }) {
           </LinearGradient>
         </View>
 
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'results' && styles.tabActive]}
-            onPress={() => setActiveTab('results')}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="list"
-              size={18}
-              color={activeTab === 'results' ? Colors.primary : Colors.textMuted}
-            />
-            <Text style={[styles.tabText, activeTab === 'results' && styles.tabTextActive]}>
-              Results
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'compare' && styles.tabActive]}
-            onPress={() => setActiveTab('compare')}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="git-compare"
-              size={18}
-              color={activeTab === 'compare' ? Colors.primary : Colors.textMuted}
-            />
-            <Text style={[styles.tabText, activeTab === 'compare' && styles.tabTextActive]}>
-              Compare
-            </Text>
-          </TouchableOpacity>
+        <View style={[styles.summaryCard, { borderLeftColor: summary.color }]}>
+          <View style={styles.summaryLeft}>
+            <Ionicons name={summary.icon} size={22} color={summary.color} />
+            <View>
+              <Text style={[styles.summaryStatus, { color: summary.color }]}>{summary.label}</Text>
+              <Text style={styles.summarySubtext}>
+                {detectedCount} of {CONDITIONS.length} conditions flagged
+                {severeCount > 0 ? `, ${severeCount} moderate-severe` : ''}
+              </Text>
+            </View>
+          </View>
         </View>
 
-        {activeTab === 'results' ? (
-          <Animated.View style={{ opacity: fadeAnim }}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={CARD_WIDTH + 12}
-              decelerationRate="fast"
-              contentContainerStyle={styles.cardsRow}
-            >
-              {Object.entries(results).map(([key, apiData]) => (
-                <ApiCard key={key} apiData={apiData} />
-              ))}
-            </ScrollView>
-          </Animated.View>
-        ) : (
-          <CompareView results={results} />
-        )}
+        <Animated.View style={{ opacity: fadeAnim }}>
+          <Text style={styles.sectionTitle}>Condition Breakdown</Text>
+          <View style={styles.conditionsHeader}>
+            <Text style={styles.conditionsHeaderLeft}>Condition</Text>
+            <Text style={styles.conditionsHeaderRight}>Severity · Confidence</Text>
+          </View>
+          {CONDITIONS.map((condition, index) => (
+            <ConditionCard
+              key={condition.key}
+              condition={condition}
+              result={claudeResults[condition.key]}
+              index={index}
+            />
+          ))}
+        </Animated.View>
+
+        <View style={styles.disclaimerCard}>
+          <Ionicons name="information-circle-outline" size={16} color={Colors.textMuted} />
+          <Text style={styles.disclaimerText}>
+            This analysis is for informational purposes only and does not constitute medical advice.
+            Consult a dermatologist for professional guidance.
+          </Text>
+        </View>
       </ScrollView>
 
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
@@ -268,43 +195,36 @@ export default function ResultsScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 12,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.textPrimary,
+  headerTitle: { fontSize: 28, fontWeight: '700', color: Colors.textPrimary },
+  claudeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#CC6B2C18',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
-  headerSubtitle: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-  },
+  claudeBadgeText: { fontSize: 12, fontWeight: '700', color: '#CC6B2C' },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20 },
   photoContainer: {
     width: '100%',
     height: 200,
     borderRadius: 20,
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  photo: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
+  photo: { width: '100%', height: '100%', resizeMode: 'cover' },
   photoGradient: {
     position: 'absolute',
     bottom: 0,
@@ -315,133 +235,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
-  photoLabel: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  tabContainer: {
-    flexDirection: 'row',
+  photoLabel: { color: '#FFF', fontSize: 14, fontWeight: '600' },
+  summaryCard: {
     backgroundColor: Colors.card,
-    borderRadius: 14,
-    padding: 4,
-    marginBottom: 20,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderLeftWidth: 4,
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 2,
   },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  tabActive: {
-    backgroundColor: Colors.primarySoft,
-  },
-  tabText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.textMuted,
-  },
-  tabTextActive: {
-    color: Colors.primary,
-  },
-  cardsRow: {
-    gap: 12,
-    paddingRight: 20,
-  },
-  apiCard: {
-    backgroundColor: Colors.card,
-    borderRadius: 20,
-    padding: 18,
-    width: CARD_WIDTH,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  apiCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.creamLight,
-  },
-  apiCardIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  apiCardName: {
+  summaryLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  summaryStatus: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
+  summarySubtext: { fontSize: 13, color: Colors.textSecondary },
+  sectionTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: Colors.textPrimary,
-    flex: 1,
+    marginBottom: 12,
   },
-  apiCardDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  conditionsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    marginBottom: 8,
   },
-  conditionsContainer: {
-    gap: 12,
-  },
-  conditionRow: {
+  conditionsHeaderLeft: { fontSize: 12, fontWeight: '600', color: Colors.textMuted },
+  conditionsHeaderRight: { fontSize: 12, fontWeight: '600', color: Colors.textMuted },
+  conditionCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: Colors.card,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 8,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 1,
   },
-  conditionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 10,
-  },
-  severityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  conditionName: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-    flex: 1,
-  },
-  conditionRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
+  conditionLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 },
+  severityDot: { width: 8, height: 8, borderRadius: 4, marginRight: 10 },
+  conditionName: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500', flex: 1 },
+  conditionRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   severityBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
-    minWidth: 70,
+    minWidth: 88,
     alignItems: 'center',
   },
-  severityLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  confidenceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    width: 70,
-  },
+  severityLabel: { fontSize: 10, fontWeight: '700' },
+  confidenceContainer: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 70 },
   confidenceBarBg: {
     flex: 1,
     height: 4,
@@ -449,84 +299,18 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     overflow: 'hidden',
   },
-  confidenceBarFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  confidenceText: {
-    fontSize: 10,
-    fontWeight: '700',
-    width: 28,
-    textAlign: 'right',
-  },
-  compareContainer: {
-    gap: 12,
-  },
-  compareRow: {
-    backgroundColor: Colors.card,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  compareHeader: {
+  confidenceBarFill: { height: '100%', borderRadius: 2 },
+  confidenceText: { fontSize: 10, fontWeight: '700', width: 28, textAlign: 'right' },
+  disclaimerCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.creamLight,
-  },
-  compareConditionName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    flex: 1,
-  },
-  agreementBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  agreementText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  compareApis: {
+    alignItems: 'flex-start',
     gap: 8,
+    backgroundColor: Colors.creamLight,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 8,
   },
-  compareApiItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  compareApiDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  compareApiName: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-    width: 100,
-  },
-  compareSeverityBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  compareSeverityText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
+  disclaimerText: { flex: 1, fontSize: 12, color: Colors.textMuted, lineHeight: 18 },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
@@ -554,10 +338,5 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 18,
   },
-  scanAgainText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
+  scanAgainText: { color: '#FFF', fontSize: 18, fontWeight: '700', letterSpacing: 0.3 },
 });

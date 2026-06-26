@@ -30,7 +30,5 @@ export const Colors = {
   overlay: 'rgba(45, 32, 38, 0.5)',
   shadow: 'rgba(45, 32, 38, 0.08)',
 
-  gpt4o: '#10A37F',
-  gemini: '#4285F4',
-  perfectCorp: '#8B5CF6',
+  claude: '#CC6B2C',
 };

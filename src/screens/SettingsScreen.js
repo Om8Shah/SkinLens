@@ -17,33 +17,19 @@ import { useAuth } from '../context/AuthContext';
 
 const API_FIELDS = [
   {
-    key: 'openai',
-    label: 'OpenAI API Key',
-    placeholder: 'sk-...',
-    icon: 'chatbubble-ellipses',
-    color: Colors.gpt4o,
-  },
-  {
-    key: 'gemini',
-    label: 'Gemini API Key',
-    placeholder: 'AIza...',
+    key: 'anthropic',
+    label: 'Anthropic API Key',
+    placeholder: 'sk-ant-...',
     icon: 'sparkles',
-    color: Colors.gemini,
-  },
-  {
-    key: 'perfectCorp',
-    label: 'Perfect Corp API Key',
-    placeholder: 'pc-...',
-    icon: 'scan',
-    color: Colors.perfectCorp,
+    color: Colors.claude,
   },
 ];
 
 export default function SettingsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
-  const [keys, setKeys] = useState({ openai: '', gemini: '', perfectCorp: '' });
-  const [showKeys, setShowKeys] = useState({ openai: false, gemini: false, perfectCorp: false });
+  const [keys, setKeys] = useState({ anthropic: '' });
+  const [showKeys, setShowKeys] = useState({ anthropic: false });
 
   const updateKey = (field, value) => {
     setKeys((prev) => ({ ...prev, [field]: value }));
@@ -82,10 +68,10 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="information-circle" size={24} color={Colors.primary} />
           </View>
           <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>API Integration Coming Soon</Text>
+            <Text style={styles.infoTitle}>Connect Your Anthropic Key</Text>
             <Text style={styles.infoText}>
-              These fields are placeholders for future API integration. The app currently uses
-              simulated results for demonstration purposes.
+              Add your Anthropic API key to enable real Claude-powered skin analysis.
+              The app currently uses simulated results for demonstration.
             </Text>
           </View>
         </View>

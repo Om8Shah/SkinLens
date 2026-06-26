@@ -42,14 +42,14 @@ const SLIDES = [
   },
   {
     id: '3',
-    accentColor: '#7C5CBF',
-    accentBg: 'rgba(124,92,191,0.12)',
-    icon: 'scan-outline',
-    iconSecondary: 'sparkles-outline',
-    headline: 'Your skin, analyzed by 3 AIs at once.',
+    accentColor: '#CC6B2C',
+    accentBg: 'rgba(204,107,44,0.12)',
+    icon: 'sparkles-outline',
+    iconSecondary: 'scan-outline',
+    headline: 'Your skin, analyzed by Claude AI.',
     stat: null,
     subtext:
-      'SkinLens uses GPT-4o, Gemini, and Perfect Corp simultaneously to give you the most accurate skin analysis available — in under 30 seconds.',
+      "Claude by Anthropic uses advanced vision AI to detect 6 skin conditions from a single photo — giving you dermatologist-level insights in under 30 seconds.",
   },
 ];
 
@@ -77,18 +77,18 @@ function Slide({ item }) {
 
       {item.id === '3' ? (
         <View style={styles.aiRow}>
-          {[
-            { name: 'GPT-4o', color: '#10A37F', icon: 'chatbubble-ellipses' },
-            { name: 'Gemini', color: '#4285F4', icon: 'sparkles' },
-            { name: 'Perfect Corp', color: '#8B5CF6', icon: 'scan' },
-          ].map((ai) => (
-            <View key={ai.name} style={styles.aiChip}>
-              <View style={[styles.aiDot, { backgroundColor: ai.color }]}>
-                <Ionicons name={ai.icon} size={12} color="#FFF" />
-              </View>
-              <Text style={styles.aiName}>{ai.name}</Text>
+          <View style={styles.aiChip}>
+            <View style={[styles.aiDot, { backgroundColor: '#CC6B2C' }]}>
+              <Ionicons name="sparkles" size={12} color="#FFF" />
             </View>
-          ))}
+            <Text style={styles.aiName}>Claude by Anthropic</Text>
+          </View>
+          <View style={styles.aiChip}>
+            <View style={[styles.aiDot, { backgroundColor: Colors.primary }]}>
+              <Ionicons name="scan" size={12} color="#FFF" />
+            </View>
+            <Text style={styles.aiName}>6 conditions checked</Text>
+          </View>
         </View>
       ) : null}
 

@@ -7,8 +7,6 @@ const CONDITIONS = [
   { key: 'coarseWrinkles', label: 'Coarse Wrinkles (>1mm)' },
 ];
 
-const SEVERITIES = ['not_detected', 'mild', 'moderate_severe'];
-
 function randomSeverity() {
   const weights = [0.35, 0.40, 0.25];
   const r = Math.random();
@@ -23,37 +21,18 @@ function randomConfidence(severity) {
   return Math.floor(Math.random() * 25) + 55;
 }
 
-function generateApiResult() {
+export function generateMockResults() {
   const results = {};
   CONDITIONS.forEach(({ key }) => {
     const severity = randomSeverity();
-    results[key] = {
-      severity,
-      confidence: randomConfidence(severity),
-    };
+    results[key] = { severity, confidence: randomConfidence(severity) };
   });
-  return results;
-}
-
-export function generateMockResults() {
   return {
-    gpt4o: {
-      name: 'GPT-4o',
-      icon: 'chatbubble-ellipses',
-      color: '#10A37F',
-      results: generateApiResult(),
-    },
-    gemini: {
-      name: 'Gemini 1.5 Pro',
+    claude: {
+      name: 'Claude',
       icon: 'sparkles',
-      color: '#4285F4',
-      results: generateApiResult(),
-    },
-    perfectCorp: {
-      name: 'Perfect Corp',
-      icon: 'scan',
-      color: '#8B5CF6',
-      results: generateApiResult(),
+      color: '#CC6B2C',
+      results,
     },
   };
 }
@@ -73,14 +52,4 @@ export function getSeverityConfig(severity) {
     default:
       return { label: 'Unknown', color: '#A89898', bgColor: '#F0F0F0' };
   }
-}
-
-export function getAgreementLevel(apiResults, conditionKey) {
-  const severities = Object.values(apiResults).map(
-    (api) => api.results[conditionKey].severity
-  );
-  const unique = [...new Set(severities)];
-  if (unique.length === 1) return { level: 'full', label: 'Full Agreement', color: '#6BBF8A' };
-  if (unique.length === 2) return { level: 'partial', label: 'Partial Agreement', color: '#E8B44E' };
-  return { level: 'none', label: 'Disagreement', color: '#E07070' };
 }
