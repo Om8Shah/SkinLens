@@ -116,7 +116,7 @@ export default function ResultsScreen({ navigation, route }) {
         <Text style={styles.headerTitle}>Your Results</Text>
         <View style={styles.claudeBadge}>
           <Ionicons name="sparkles" size={13} color="#CC6B2C" />
-          <Text style={styles.claudeBadgeText}>Claude AI</Text>
+          <Text style={styles.claudeBadgeText}>SkinLens AI</Text>
         </View>
       </View>
 

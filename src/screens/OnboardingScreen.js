@@ -46,10 +46,10 @@ const SLIDES = [
     accentBg: 'rgba(204,107,44,0.12)',
     icon: 'sparkles-outline',
     iconSecondary: 'scan-outline',
-    headline: 'Your skin, analyzed by Claude AI.',
+    headline: 'Your skin, analyzed by AI.',
     stat: null,
     subtext:
-      "Claude by Anthropic uses advanced vision AI to detect 6 skin conditions from a single photo — giving you dermatologist-level insights in under 30 seconds.",
+      "SkinLens uses advanced AI vision to detect 6 skin conditions from a single photo — giving you dermatologist-level insights in under 30 seconds.",
   },
 ];
 
@@ -81,7 +81,7 @@ function Slide({ item }) {
             <View style={[styles.aiDot, { backgroundColor: '#CC6B2C' }]}>
               <Ionicons name="sparkles" size={12} color="#FFF" />
             </View>
-            <Text style={styles.aiName}>Claude by Anthropic</Text>
+            <Text style={styles.aiName}>SkinLens AI</Text>
           </View>
           <View style={styles.aiChip}>
             <View style={[styles.aiDot, { backgroundColor: Colors.primary }]}>

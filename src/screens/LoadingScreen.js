@@ -115,7 +115,7 @@ export default function LoadingScreen({ navigation, route }) {
         </Animated.View>
 
         <Text style={styles.title}>Analyzing Your Skin</Text>
-        <Text style={styles.subtitle}>Claude AI is reviewing your photo</Text>
+        <Text style={styles.subtitle}>SkinLens AI is reviewing your photo</Text>
 
         <View style={styles.countdownRow}>
           <View style={styles.countdownBadge}>
@@ -136,8 +136,8 @@ export default function LoadingScreen({ navigation, route }) {
               <Ionicons name="sparkles" size={24} color={CLAUDE_COLOR} />
             </View>
             <View style={styles.claudeInfo}>
-              <Text style={styles.claudeName}>Claude</Text>
-              <Text style={styles.claudeBy}>by Anthropic</Text>
+              <Text style={styles.claudeName}>SkinLens AI</Text>
+              <Text style={styles.claudeBy}>Advanced skin analysis</Text>
             </View>
             <View style={styles.analyzingBadge}>
               <Animated.View style={[styles.analyzingDot, { opacity: dotAnim }]} />

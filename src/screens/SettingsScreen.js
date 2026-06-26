@@ -17,9 +17,9 @@ import { useAuth } from '../context/AuthContext';
 
 const API_FIELDS = [
   {
-    key: 'anthropic',
-    label: 'Anthropic API Key',
-    placeholder: 'sk-ant-...',
+    key: 'aiService',
+    label: 'AI Service Key',
+    placeholder: 'sk-...',
     icon: 'sparkles',
     color: Colors.claude,
   },
@@ -28,8 +28,8 @@ const API_FIELDS = [
 export default function SettingsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
-  const [keys, setKeys] = useState({ anthropic: '' });
-  const [showKeys, setShowKeys] = useState({ anthropic: false });
+  const [keys, setKeys] = useState({ aiService: '' });
+  const [showKeys, setShowKeys] = useState({ aiService: false });
 
   const updateKey = (field, value) => {
     setKeys((prev) => ({ ...prev, [field]: value }));
@@ -68,9 +68,9 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="information-circle" size={24} color={Colors.primary} />
           </View>
           <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>Connect Your Anthropic Key</Text>
+            <Text style={styles.infoTitle}>AI Integration Coming Soon</Text>
             <Text style={styles.infoText}>
-              Add your Anthropic API key to enable real Claude-powered skin analysis.
+              Add your AI service key to enable real-time skin analysis.
               The app currently uses simulated results for demonstration.
             </Text>
           </View>
