@@ -26,7 +26,7 @@ const SLIDES = [
     accentBg: 'rgba(194,112,138,0.12)',
     icon: 'people-outline',
     iconSecondary: 'help-circle-outline',
-    headline: 'Most people don't know their skin.',
+    headline: "Most people don't know their skin.",
     stat: 'Over 85% of people will experience acne in their lifetime, yet fewer than 1 in 3 ever consult a dermatologist.',
     subtext: 'SkinLens gives you dermatologist-level insight in seconds — no appointment needed.',
   },
